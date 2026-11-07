@@ -21,9 +21,31 @@ def test_fee_rounds_to_cents():
     assert late_fee(3, 0.333) == 1.0
 
 
+def test_late_fee_within_grace_period_is_free():
+    assert late_fee(3, 0.25, grace_days=3) == 0.0
+
+
+def test_late_fee_first_day_after_grace_is_charged():
+    assert late_fee(4, 0.25, grace_days=3) == 0.25
+
+
+def test_late_fee_charges_only_days_past_grace():
+    assert late_fee(5, 0.25, grace_days=3) == 0.5
+
+
 def test_fee_is_capped_at_max_fee():
     assert late_fee(40, 0.25, max_fee=5.0) == 5.0
 
 
 def test_fee_below_cap_is_unchanged():
     assert late_fee(4, 0.25, max_fee=5.0) == 1.0
+
+
+def test_grace_period_applies_before_cap():
+    # 10 days, 3 free -> 7 x 0.50 = 3.50, capped at 2.00
+    assert late_fee(10, 0.5, grace_days=3, max_fee=2.0) == 2.0
+
+
+def test_grace_and_cap_below_cap_is_unchanged():
+    # 6 days, 2 free -> 4 x 0.50 = 2.00, under the 5.00 cap
+    assert late_fee(6, 0.5, grace_days=2, max_fee=5.0) == 2.0
